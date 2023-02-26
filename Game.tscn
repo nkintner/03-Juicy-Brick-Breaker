@@ -1,0 +1,163 @@
+[gd_scene load_steps=17 format=2]
+
+[ext_resource path="res://Brick/Brick_Container.gd" type="Script" id=1]
+[ext_resource path="res://Paddle/Paddle.tscn" type="PackedScene" id=2]
+[ext_resource path="res://Ball/Ball_Container.gd" type="Script" id=3]
+[ext_resource path="res://Game.gd" type="Script" id=4]
+[ext_resource path="res://UI/Pause_Menu.tscn" type="PackedScene" id=5]
+[ext_resource path="res://Wall/Wall.gd" type="Script" id=6]
+[ext_resource path="res://UI/HUD.tscn" type="PackedScene" id=7]
+[ext_resource path="res://UI/Instructions.tscn" type="PackedScene" id=8]
+[ext_resource path="res://Effects/Fever.gd" type="Script" id=9]
+[ext_resource path="res://Effects/Comet_Container.gd" type="Script" id=10]
+[ext_resource path="res://Assets/BrickBreakerMusic.mp3" type="AudioStream" id=11]
+
+[sub_resource type="Shader" id=4]
+code = "/*
+	動的電子背景シェーダー by あるる（きのもと 結衣） @arlez80
+	Procedural Electric Background Shader by Yui Kinomoto @arlez80
+
+	MIT License
+*/
+shader_type canvas_item;
+
+uniform vec4 background_color : hint_color = vec4( 0.0, 0.0, 0.0, 1.0 );
+uniform vec4 line_color : hint_color = vec4( 0.0, 1.0, 1.0, 1.0 );
+uniform float line_freq = 9.56;
+uniform float height = 0.6;
+uniform float speed = 0.8;
+uniform vec2 scale = vec2( 2.0, 16.0 );
+
+void fragment( )
+{
+	vec2 uv = UV * scale;
+	float shift = cos( floor( uv.y ) );
+	uv.x += shift;
+
+	float freq = clamp( cos( uv.x * line_freq ) * 3.0, 0.0, 1.0 ) * height;
+	float line = 1.0 - clamp( abs( freq - mod( uv.y, 1.0 ) ) * 11.0, 0.0, 1.0 );
+
+	COLOR = mix( background_color, line_color, line * mod( uv.x - TIME * speed * abs( shift ), 1.0 ) /*  * mod( TIME + shift, 1.0 ) */ );
+}"
+
+[sub_resource type="ShaderMaterial" id=5]
+shader = SubResource( 4 )
+shader_param/background_color = Color( 0, 0, 0, 1 )
+shader_param/line_color = Color( 0, 1, 1, 1 )
+shader_param/line_freq = 9.56
+shader_param/height = 0.6
+shader_param/speed = 0.8
+shader_param/scale = Vector2( 2, 16 )
+
+[sub_resource type="RectangleShape2D" id=1]
+extents = Vector2( 100, 500 )
+
+[sub_resource type="RectangleShape2D" id=2]
+extents = Vector2( 612, 100 )
+
+[sub_resource type="Environment" id=3]
+background_mode = 4
+dof_blur_near_enabled = true
+dof_blur_near_distance = 1.3
+glow_enabled = true
+glow_bloom = 0.03
+glow_blend_mode = 0
+glow_bicubic_upscale = true
+
+[node name="Game" type="Node2D"]
+script = ExtResource( 4 )
+
+[node name="ColorRect" type="ColorRect" parent="."]
+modulate = Color( 0.356863, 0.356863, 0.356863, 1 )
+material = SubResource( 5 )
+margin_right = 1028.0
+margin_bottom = 805.0
+
+[node name="Wall_Container" type="Node2D" parent="."]
+
+[node name="Wall_Left" type="StaticBody2D" parent="Wall_Container"]
+script = ExtResource( 6 )
+
+[node name="ColorRect" type="ColorRect" parent="Wall_Container/Wall_Left"]
+margin_left = -190.0
+margin_top = -100.0
+margin_right = 10.0
+margin_bottom = 900.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Wall_Container/Wall_Left"]
+position = Vector2( -90, 400 )
+shape = SubResource( 1 )
+
+[node name="Wall_Right" type="StaticBody2D" parent="Wall_Container"]
+position = Vector2( 1024, 0 )
+script = ExtResource( 6 )
+
+[node name="ColorRect" type="ColorRect" parent="Wall_Container/Wall_Right"]
+margin_left = -10.0
+margin_top = -100.0
+margin_right = 190.0
+margin_bottom = 900.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Wall_Container/Wall_Right"]
+position = Vector2( 90, 400 )
+shape = SubResource( 1 )
+
+[node name="Wall_Top" type="StaticBody2D" parent="Wall_Container"]
+script = ExtResource( 6 )
+
+[node name="ColorRect" type="ColorRect" parent="Wall_Container/Wall_Top"]
+margin_left = -100.0
+margin_top = -190.0
+margin_right = 1124.0
+margin_bottom = 10.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Wall_Container/Wall_Top"]
+position = Vector2( 512, -90 )
+shape = SubResource( 2 )
+
+[node name="Brick_Container" type="Node2D" parent="."]
+pause_mode = 2
+script = ExtResource( 1 )
+
+[node name="Paddle_Container" type="Node2D" parent="."]
+
+[node name="Paddle" parent="Paddle_Container" instance=ExtResource( 2 )]
+position = Vector2( 462, 720 )
+
+[node name="Ball_Container" type="Node2D" parent="."]
+script = ExtResource( 3 )
+
+[node name="Powerup_Container" type="Node2D" parent="."]
+
+[node name="Fever" type="Node2D" parent="."]
+script = ExtResource( 9 )
+
+[node name="Timer" type="Timer" parent="Fever"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource( 3 )
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUD" parent="UI" instance=ExtResource( 7 )]
+pause_mode = 0
+visible = false
+
+[node name="Pause_Menu" parent="UI" instance=ExtResource( 5 )]
+visible = false
+
+[node name="Instructions" parent="UI" instance=ExtResource( 8 )]
+pause_mode = 2
+
+[node name="Comet_Container" type="Node2D" parent="."]
+script = ExtResource( 10 )
+
+[node name="Camera2D" type="Camera2D" parent="."]
+anchor_mode = 0
+current = true
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 11 )
+autoplay = true
+
+[connection signal="timeout" from="Fever/Timer" to="Fever" method="_on_Timer_timeout"]
